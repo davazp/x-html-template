@@ -128,31 +128,32 @@ order to be printed first."
       (write-string string *template-output*)
       (funcall next-fn values))))
 
-(defun create-var-printer (string-list symbol next-fn)
+(defun create-var-printer (string-list expression next-fn)
   "Used internally to create template printers for TMPL_VAR. SYMBOL is
 the symbol associated with the tag. NEXT-FN is the next function to be
 called in the chain of closures. STRING-LIST is a list of strings in
 reverse order to be printed first."
-  (let ((string (list-to-string string-list)))
+  (let ((string (list-to-string string-list))
+	(cexpr (compile-expression expression)))
     (lambda (values)
       (write-string string *template-output*)
-      (let* ((value (funcall *value-access-function* symbol values))
+      (let* ((value (funcall cexpr values))
              (string (typecase value
                        (null
                         (if *convert-nil-to-empty-string*
                             ""
-                            (with-use-value-restart (symbol)
+                            (with-use-value-restart (value)
                               (signal-template-missing-value-error 
-                               "Value for symbol ~S is NIL"
-                               symbol))))
+                               "Value for expression ~S is NIL"
+                               expression))))
                        (string value)                            
                        (otherwise
                         (cond (*format-non-strings* (format nil "~A" value))
-                              (t (with-use-value-restart (symbol)
+                              (t (with-use-value-restart (value)
                                    (error 'template-not-a-string-error
                                           :value value
-                                          :format-control "Value ~S for symbol ~S is not a string"
-                                          :format-arguments (list value symbol)))))))))
+                                          :format-control "Value ~S for expression ~S is not a string"
+                                          :format-arguments (list value expression)))))))))
         (write-string (funcall *string-modifier* string) *template-output*))
       (funcall next-fn values))))
 
@@ -336,7 +337,7 @@ TMPL_IF or TMPL_UNLESS, a corresponding TMPL_ELSE was seen."
           ((string-equal token "TMPL_VAR")
             ;; TMPL_VAR tag - first read the symbol which has to
             ;; follow and intern it
-            (let ((symbol (read-tag-rest :read-attribute t)))
+            (let ((expression (read-tag-rest :read-attribute t :intern nil)))
               (multiple-value-bind (next-fn else-follows)
                   ;; first we recursively create the template printer
                   ;; for the rest of the stream
@@ -347,7 +348,7 @@ TMPL_IF or TMPL_UNLESS, a corresponding TMPL_ELSE was seen."
                  ;; that we don't skip leading and trailing whitespace
                  ;; here
                  (create-var-printer (cons string string-stack)
-                                        symbol
+                                        expression
                                         next-fn)
                  else-follows))))
           ((or (string-equal token "TMPL_LOOP")
