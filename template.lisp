@@ -57,8 +57,7 @@ associated with SYMBOL isn't to our liking."
 
 (defun compile-expression (expression)
   "Return a closure which takes the values and evaluates EXPRESSION in
-this environment. It is used internally in TMPL_VAR, TMPL_IF,
-TMPL_UNLESS, TMPL_LOOP, TMPL_REPEAT."
+this environment. It is used internally in TMPL_VAR, TMPL_IF, TMPL_UNLESS."
   ;; 
   ;; Grammar of expressions:
   ;; 
