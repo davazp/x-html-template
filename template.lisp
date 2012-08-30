@@ -50,6 +50,61 @@ associated with SYMBOL isn't to our liking."
 #+:lispworks
 (editor:setup-indent "with-use-value-restart" 1 2 4)
 
+(defun compile-expression (expression)
+  "Return a closure which takes the values and evaluates EXPRESSION in
+this environment. It is used internally in TMPL_VAR, TMPL_IF,
+TMPL_UNLESS, TMPL_LOOP, TMPL_REPEAT."
+  ;; 
+  ;; Grammar of expressions:
+  ;; 
+  ;; expression := 'foo' || "foo"
+  ;;            || symbol
+  ;;            || symbol(expression, expression, ... expression)
+  ;; 
+  (with-input-from-string (*standard-input* expression)
+    (labels ((intern-symbol (string)
+	       ;; Auxiliary function. Intern a symbol in the
+	       ;; *TEMPLATE-SYMBOL-PACKAGE* package.
+	       (intern
+		(funcall (if *upcase-attribute-strings*
+			     #'string-upcase
+			     #'identity)
+			 string)
+		*template-symbol-package*))
+
+	     ;; Read a symbol from *STANDARD-INPUT*
+	     (symbol ()
+	       (loop
+		  for ch = (peek-char nil *standard-input* nil)
+		  until (or (null ch) (find ch ",() "))
+		  collect (read-char) into chars
+		  finally (return (intern-symbol (coerce chars 'string)))))
+
+	     ;; Read an expression from *STANDARD-INPUT*
+	     (expression ()
+	       (skip-whitespace)
+	       (cond
+		 ((find (peek-char) "\"'") ; literal expression
+		  (read-delimited-string))
+		 (t
+		  ;; Symbol of function
+		  (let ((fname (symbol))
+			(arguments nil))
+		    (unless (eql (peek-char nil *standard-input* nil) #\()
+		      (return-from expression fname))
+		    (loop
+		       initially (read-char)
+		       while (char/= (peek-char) #\))
+		       collect (expression) into args
+		       do (skip-whitespace)
+		       do (assert (find (peek-char) ",)"))
+		       when (char= (peek-char) #\,) do (read-char)
+		       finally (setf arguments args))
+		    (read-char)
+		    (cons fname arguments))))))
+      (expression))))
+
+
 (defun create-simple-printer (string-list &optional (next-fn #'no-values))
   "Used internally to create template printers for strings which don't
 include template tags. NEXT-FN is the next function to be called in
