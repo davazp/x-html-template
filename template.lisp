@@ -78,20 +78,25 @@ TMPL_UNLESS, TMPL_LOOP, TMPL_REPEAT."
 		  for ch = (peek-char nil *standard-input* nil)
 		  until (or (null ch) (find ch ",() "))
 		  collect (read-char) into chars
-		  finally (return (intern-symbol (coerce chars 'string)))))
+		  finally (let ((symbol (intern-symbol (coerce chars 'string))))
+			    (return (lambda (values)
+				      (funcall *value-access-function* symbol values))))))
 
 	     ;; Read an expression from *STANDARD-INPUT*
 	     (expression ()
 	       (skip-whitespace)
 	       (cond
 		 ((find (peek-char) "\"'") ; literal expression
-		  (read-delimited-string))
+		  (let ((value (read-delimited-string)))
+		    (lambda (values)
+		      (declare (ignore values))
+		      value)))
 		 (t
 		  ;; Symbol of function
-		  (let ((fname (symbol))
+		  (let ((function (symbol))
 			(arguments nil))
 		    (unless (eql (peek-char nil *standard-input* nil) #\()
-		      (return-from expression fname))
+		      (return-from expression function))
 		    (loop
 		       initially (read-char)
 		       while (char/= (peek-char) #\))
@@ -101,7 +106,10 @@ TMPL_UNLESS, TMPL_LOOP, TMPL_REPEAT."
 		       when (char= (peek-char) #\,) do (read-char)
 		       finally (setf arguments args))
 		    (read-char)
-		    (cons fname arguments))))))
+		    (lambda (values)
+		      (apply (funcall function values)
+			     (mapcar (lambda (expr) (funcall expr values))
+				     arguments))))))))
       (expression))))
 
 
