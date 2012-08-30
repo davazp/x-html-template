@@ -129,8 +129,8 @@ order to be printed first."
       (funcall next-fn values))))
 
 (defun create-var-printer (string-list expression next-fn)
-  "Used internally to create template printers for TMPL_VAR. SYMBOL is
-the symbol associated with the tag. NEXT-FN is the next function to be
+  "Used internally to create template printers for TMPL_VAR. EXPRESSION is
+the string associated with the tag. NEXT-FN is the next function to be
 called in the chain of closures. STRING-LIST is a list of strings in
 reverse order to be printed first."
   (let ((string (list-to-string string-list))
