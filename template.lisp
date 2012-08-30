@@ -168,21 +168,22 @@ of strings in reverse order to be printed first."
       (funcall (car (gethash pathname *printer-hash*)) values)
       (funcall next-fn values))))
   
-(defun create-if-printer (string-list symbol if-fn else-fn next-fn unlessp)
+(defun create-if-printer (string-list expression if-fn else-fn next-fn unlessp)
   "Used internally to create template printers for TMPL_IF and
-TMPL_UNLESS tags. SYMBOL is the symbol associated with the tag.  IF-FN
+TMPL_UNLESS tags. EXPRESSION is the string associated with the tag.  IF-FN
 is the printer for the IF branch, ELSE-FN is the printer for the ELSE
 branch.  NEXT-FN is the next function to be called in the chain of
 closures.  STRING-LIST is a list of strings in reverse order to be
 printed first.  If UNLESSP is true, IF-FN and ELSE-FN are switched."
-  (let ((string (list-to-string string-list)))
+  (let ((string (list-to-string string-list))
+	(cexpr (compile-expression expression)))
     (when unlessp
       (rotatef if-fn else-fn))
     (lambda (values)
       (write-string string *template-output*)
-      (if (funcall *value-access-function* symbol values)
-        (funcall if-fn values)
-        (funcall else-fn values))
+      (if (funcall cexpr values)
+	  (funcall if-fn values)
+	  (funcall else-fn values))
       (funcall next-fn values))))
 
 (defun create-loop-printer (string-list symbol body-fn next-fn)
@@ -431,9 +432,8 @@ TMPL_IF or TMPL_UNLESS, a corresponding TMPL_ELSE was seen."
                                          string-stack)))
           ((or (string-equal token "TMPL_IF")
                (string-equal token "TMPL_UNLESS"))
-            ;; TMPL_IF or TMPL_UNLESS tag - first read the symbol
-            ;; which has to follow and intern it
-            (let ((symbol (read-tag-rest :read-attribute t))
+            ;; TMPL_IF or TMPL_UNLESS tag - first read the string
+            (let ((expression (read-tag-rest :read-attribute t :intern nil))
                   (unlessp (string-equal token "TMPL_UNLESS")))
               (multiple-value-bind (if-fn else-follows)
                   (with-syntax-error-location ()
@@ -473,7 +473,7 @@ TMPL_IF or TMPL_UNLESS, a corresponding TMPL_ELSE was seen."
                      ;; template printer for TMPL_IF or TMPL_UNLESS
                      (create-if-printer (cons (skip-leading-whitespace string)
                                               string-stack)
-                                        symbol
+                                        expression
                                         if-fn
                                         else-fn
                                         next-fn
