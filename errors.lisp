@@ -1,4 +1,4 @@
-;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: HTML-TEMPLATE-LISP; Base: 10 -*-
+;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: X-HTML-TEMPLATE; Base: 10 -*-
 ;;; $Header: /usr/local/cvsrep/html-template/errors.lisp,v 1.8 2007/01/01 23:49:16 edi Exp $
 
 ;;; Copyright (c) 2003-2007, Dr. Edmund Weitz. All rights reserved.
@@ -27,7 +27,7 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:html-template)
+(in-package #:x-html-template)
 
 (defstruct syntax-error-location
   "Structure to store parser locations consisting of a stream, a line
@@ -40,12 +40,12 @@ the parser.")
 
 (define-condition template-error (simple-error)
   ()
-  (:documentation "All errors signaled by HTML-TEMPLATE are of
+  (:documentation "All errors signaled by X-HTML-TEMPLATE are of
 this type."))
   
 (define-condition template-invocation-error (template-error)
   ()
-  (:documentation "Signaled when HTML-TEMPLATE functions are
+  (:documentation "Signaled when X-HTML-TEMPLATE functions are
 invoked with wrong arguments."))
   
 (define-condition template-missing-value-error (template-error)

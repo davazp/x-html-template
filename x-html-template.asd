@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-USER; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/html-template/html-template.system,v 1.5 2007/01/01 23:49:16 edi Exp $
+;;; $Header: /usr/local/cvsrep/html-template/html-template.asd,v 1.15 2007/11/16 21:09:24 edi Exp $
 
 ;;; Copyright (c) 2003-2007, Dr. Edmund Weitz.  All rights reserved.
 
@@ -27,18 +27,12 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-user)
-
-(defparameter *html-template-base-directory*
-  (make-pathname :name nil :type nil :version nil
-                 :defaults (parse-namestring *load-truename*)))
-
-(mk:defsystem #:html-template
-    :source-pathname *html-template-base-directory*
-    :source-extension "lisp"
-    :components ((:file "packages")
-                 (:file "specials" :depends-on ("packages"))
-                 (:file "errors" :depends-on ("specials"))
-                 (:file "util" :depends-on ("errors"))
-                 (:file "template" :depends-on ("util"))
-                 (:file "api" :depends-on ("template"))))
+(asdf:defsystem :x-html-template
+  :version "0.9.1"
+  :serial t
+  :components ((:file "packages")
+               (:file "specials")
+               (:file "errors")
+               (:file "util")
+               (:file "template")
+               (:file "api")))

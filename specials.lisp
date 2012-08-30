@@ -1,4 +1,4 @@
-;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: HTML-TEMPLATE; Base: 10 -*-
+;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: X-HTML-TEMPLATE; Base: 10 -*-
 ;;; $Header: /usr/local/cvsrep/html-template/specials.lisp,v 1.24 2007/03/09 13:09:16 edi Exp $
 
 ;;; Copyright (c) 2003-2007, Dr. Edmund Weitz. All rights reserved.
@@ -27,7 +27,7 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:html-template)
+(in-package #:x-html-template)
 
 (defvar *find-string-hash* (make-hash-table :test #'equal)
   "Hash tables used internally by READ-UNTIL to cache offset arrays.")
@@ -139,7 +139,7 @@ strings.")
 (defvar *hyperdoc-base-uri* "http://weitz.de/html-template/")
 
 (let ((exported-symbols-alist
-       (loop for symbol being the external-symbols of :html-template
+       (loop for symbol being the external-symbols of :x-html-template
              collect (cons symbol
                            (concatenate 'string
                                         "#"

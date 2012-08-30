@@ -1,4 +1,4 @@
-;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: HTML-TEMPLATE-TEST; Base: 10 -*-
+;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: X-HTML-TEMPLATE-TEST; Base: 10 -*-
 ;;; $Header: /usr/local/cvsrep/html-template/test.lisp,v 1.13 2007/01/01 23:49:16 edi Exp $
 
 ;;; Copyright (c) 2003-2007, Dr. Edmund Weitz. All rights reserved.
@@ -30,14 +30,14 @@
 (in-package #:cl-user)
 
 #-:cormanlisp
-(defpackage #:html-template-test
-  (:use #:cl #:html-template))
+(defpackage #:x-html-template-test
+  (:use #:cl #:x-html-template))
 
 #+:cormanlisp
-(defpackage "HTML-TEMPLATE-TEST"
-  (:use "CL" "HTML-TEMPLATE"))
+(defpackage "X-HTML-TEMPLATE-TEST"
+  (:use "CL" "X-HTML-TEMPLATE"))
 
-(in-package #:html-template-test)
+(in-package #:x-html-template-test)
 
 (format t "~&Please wait a couple of seconds.")
 (force-output)

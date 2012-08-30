@@ -1,4 +1,4 @@
-;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: HTML-TEMPLATE; Base: 10 -*-
+;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: X-HTML-TEMPLATE; Base: 10 -*-
 ;;; $Header: /usr/local/cvsrep/html-template/api.lisp,v 1.22 2007/03/09 13:09:16 edi Exp $
 
 ;;; Copyright (c) 2003-2007, Dr. Edmund Weitz. All rights reserved.
@@ -27,7 +27,7 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:html-template)
+(in-package #:x-html-template)
 
 (defgeneric create-template-printer (template
                                      &key force

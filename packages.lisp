@@ -29,8 +29,8 @@
 
 (in-package :cl-user)
 
-(defpackage :html-template
-  (:nicknames :template)
+(defpackage :x-html-template
+  (:nicknames :x-template)
   (:use :cl)
   (:export :*call-template-access-function*
 	   :*call-values-access-function*
@@ -69,4 +69,4 @@
            :template-syntax-error-line
            :template-syntax-error-stream))
 
-(pushnew :html-template *features*)
+(pushnew :x-html-template *features*)
