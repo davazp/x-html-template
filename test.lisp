@@ -278,6 +278,35 @@
       (*ignore-empty-lines* t))
   (test result template values))
 
+
+(test "[FOO]" "[<!-- tmpl_var upcase(string) -->]" '(:string "foo" :upcase string-upcase))
+(test "[STRING]" "[<!-- tmpl_var upcase('string') -->]" '(:string "foo" :upcase string-upcase))
+
+(let ((*string-modifier* #'identity))
+  (test "[upcase(\"string\")]" "[<!-- tmpl_var 'upcase(\"string\")' -->]"
+        '(:string "foo" :upcase string-upcase)))
+
+(test "[x]" "[<!-- tmpl_if equal(string, 'foobar') -->x<!-- /tmpl_if -->]"
+      (list :equal (lambda (arg1 arg2)
+                     (equal (prin1-to-string arg1) (prin1-to-string arg2)))
+            :string "foobar"))
+
+(test "[]" "[<!-- tmpl_unless equal(string, 'foobar') -->x<!-- /tmpl_unless -->]"
+      (list :equal (lambda (arg1 arg2)
+                     (equal (prin1-to-string arg1) (prin1-to-string arg2)))
+            :string "foobar"))
+
+(test "[xxx]" "[<!-- tmpl_loop list-fun() --><!-- tmpl_var char --><!-- /tmpl_loop -->]"
+      (list :list-fun (lambda ()
+                        '((:key "value")
+                          (:key "value")
+                          (:key "value")))
+            :char #\x))
+
+(test "[xxx]" "[<!-- tmpl_repeat inc(x) --><!-- tmpl_var char --><!-- /tmpl_repeat -->]"
+      (list :inc #'1+ :x 2 :char #\x))
+
+
 (let ((tp (create-template-printer "A square has <!-- TMPL_VAR number --> corners"))
       (*format-non-strings* nil))
   (handler-bind
