@@ -32,17 +32,17 @@
 
 (defmacro with-use-value-restart ((symbol) error-form)
   "Provide a USE-VALUE restart for ERROR-FORM in case the value
-associated with SYMBOL isn't to our liking."
+associated with EXPRESSION isn't to our liking."
   `(restart-case
       ,error-form
     (use-value (other-value)
       :report (lambda (stream)
                 (format stream
-                        "Use another value for symbol ~S: "
+                        "Use another value for the expression ~S: "
                         ,symbol))
       :interactive (lambda ()
                      (format t
-                             "Enter another value for symbol ~S: "
+                             "Enter another value for expression ~S: "
                              ,symbol)
                      (multiple-value-list (eval (read))))
       other-value)))
@@ -53,14 +53,14 @@ associated with SYMBOL isn't to our liking."
 
 (defun compile-expression (expression)
   "Return a closure which takes the values and evaluates EXPRESSION in
-this environment. It is used internally in TMPL_VAR, TMPL_IF, TMPL_UNLESS."
-  ;; 
+this environment. It is used internally in the tag printers."
+  ;;
   ;; Grammar of expressions:
-  ;; 
+  ;;
   ;; expression := 'foo' || "foo"
   ;;            || symbol
   ;;            || symbol(expression, expression, ... expression)
-  ;; 
+  ;;
   (with-input-from-string (*standard-input* expression)
     (labels ((intern-symbol (string)
 	       ;; Auxiliary function. Intern a symbol in the
@@ -79,8 +79,8 @@ this environment. It is used internally in TMPL_VAR, TMPL_IF, TMPL_UNLESS."
 		  until (or (null ch) (find ch ",() "))
 		  collect (read-char) into chars
 		  finally (let ((symbol (intern-symbol (coerce chars 'string))))
-			    (return (lambda (values)
-				      (funcall *value-access-function* symbol values))))))
+			    (return (lambda (values &optional in-loop-p)
+				      (funcall *value-access-function* symbol values in-loop-p))))))
 
 	     ;; Read an expression from *STANDARD-INPUT*
 	     (expression ()
@@ -88,8 +88,8 @@ this environment. It is used internally in TMPL_VAR, TMPL_IF, TMPL_UNLESS."
 	       (cond
 		 ((find (peek-char) "\"'") ; literal expression
 		  (let ((value (read-delimited-string)))
-		    (lambda (values)
-		      (declare (ignore values))
+		    (lambda (values &optional in-loop-p)
+		      (declare (ignore values in-loop-p))
 		      value)))
 		 (t
 		  ;; Symbol of function
@@ -106,10 +106,21 @@ this environment. It is used internally in TMPL_VAR, TMPL_IF, TMPL_UNLESS."
 		       when (char= (peek-char) #\,) do (read-char)
 		       finally (setf arguments args))
 		    (read-char)
-		    (lambda (values)
-		      (apply (funcall function values)
-			     (mapcar (lambda (expr) (funcall expr values))
-				     arguments))))))))
+		    (lambda (values &optional in-loop-p)
+                      (let ((result
+                             (apply (funcall function values)
+                                    (mapcar (lambda (expr) (funcall expr values))
+                                            arguments))))
+                        ;; FIXME: This code is duplicated from the
+                        ;; file specials.lisp.
+                        (cond ((and in-loop-p *sequences-are-lists*)
+                               (loop for element in result
+                                  when (and element (listp element))
+                                  ;; keep values from upper levels
+                                  collect (append element values)
+                                  else
+                                  collect element))
+                              (t result)))))))))
       (expression))))
 
 
@@ -137,14 +148,14 @@ reverse order to be printed first."
                        (null
                         (if *convert-nil-to-empty-string*
                             ""
-                            (with-use-value-restart (value)
-                              (signal-template-missing-value-error 
+                            (with-use-value-restart (expression)
+                              (signal-template-missing-value-error
                                "Value for expression ~S is NIL"
                                expression))))
-                       (string value)                            
+                       (string value)
                        (otherwise
                         (cond (*format-non-strings* (format nil "~A" value))
-                              (t (with-use-value-restart (value)
+                              (t (with-use-value-restart (expression)
                                    (error 'template-not-a-string-error
                                           :value value
                                           :format-control "Value ~S for expression ~S is not a string"
@@ -162,7 +173,7 @@ of strings in reverse order to be printed first."
       (write-string string *template-output*)
       (funcall (car (gethash pathname *printer-hash*)) values)
       (funcall next-fn values))))
-  
+
 (defun create-if-printer (string-list expression if-fn else-fn next-fn unlessp)
   "Used internally to create template printers for TMPL_IF and
 TMPL_UNLESS tags. EXPRESSION is the string associated with the tag.  IF-FN
@@ -181,55 +192,55 @@ printed first.  If UNLESSP is true, IF-FN and ELSE-FN are switched."
 	  (funcall else-fn values))
       (funcall next-fn values))))
 
-(defun create-loop-printer (string-list symbol body-fn next-fn)
+(defun create-loop-printer (string-list expression body-fn next-fn)
   "Used internally to create template printers for TMPL_LOOP
-tags. SYMBOL is the symbol associated with the tag. BODY-FN is the
-template printer for the body of the loop. NEXT-FN is the next
+tags. EXPRESSION is the expression associated with the tag. BODY-FN is
+the template printer for the body of the loop. NEXT-FN is the next
 function to be called in the chain of closures. STRING-LIST is a list
 of strings in reverse order to be printed first."
-  (let ((string (list-to-string string-list)))
+  (let ((string (list-to-string string-list))
+        (cexpr (compile-expression expression)))
     (cond (*sequences-are-lists*
             (lambda (values)
               (write-string string *template-output*)
-              (dolist (value (funcall *value-access-function*
-                                      symbol values t))
+              (dolist (value (funcall cexpr values t))
                 (funcall body-fn value))
               (funcall next-fn values)))
           (t
             (lambda (values)
               (write-string string *template-output*)
-              (loop for value across (funcall *value-access-function*
-                                              symbol values t)
+              (loop for value across (funcall cexpr values t)
                     do (funcall body-fn value))
               (funcall next-fn values))))))
 
-(defun create-repeat-printer (string-list symbol body-fn next-fn)
+(defun create-repeat-printer (string-list expression body-fn next-fn)
   "Used internally to create template printers for TMPL_REPEAT
-tags. SYMBOL is the symbol associated with the tag. BODY-FN is the
-template printer for the body of the loop. NEXT-FN is the next
+tags. EXPRESSION is the expression associated with the tag. BODY-FN is
+the template printer for the body of the loop. NEXT-FN is the next
 function to be called in the chain of closures. STRING-LIST is a list
 of strings in reverse order to be printed first."
-  (let ((string (list-to-string string-list)))
+  (let ((string (list-to-string string-list))
+        (cexpr (compile-expression expression)))
     (lambda (values)
       (write-string string *template-output*)
-      (let ((factor (funcall *value-access-function* symbol values)))
+      (let ((factor (funcall cexpr values)))
         (when (and (integerp factor) (plusp factor))
           (loop repeat factor
                 do (funcall body-fn values))))
       (funcall next-fn values))))
 
-(defun create-call-printer (string-list symbol next-fn)
+(defun create-call-printer (string-list expression next-fn)
   "Used internally to create template printers for TMPL_CALL tags.
-SYMBOL is the symbol associated with the tag. BODY-FN is the template
-printer for the body of the loop. NEXT-FN is the next function to be
-called in the chain of closures. STRING-LIST is a list of strings in
-reverse order to be printed first."
-  (let ((string (list-to-string string-list)))
+EXPRESSION is the expression associated with the tag. BODY-FN is the
+template printer for the body of the loop. NEXT-FN is the next
+function to be called in the chain of closures. STRING-LIST is a list
+of strings in reverse order to be printed first."
+  (let ((string (list-to-string string-list))
+        (cexpr (compile-expression expression)))
     (cond (*sequences-are-lists*
            (lambda (values)
              (write-string string *template-output*)
-             (dolist (call (funcall *value-access-function*
-                                    symbol values t))
+             (dolist (call (funcall cexpr values t))
                (fill-and-print-template
                 (funcall *call-template-access-function* call)
                 (funcall *call-value-access-function* call)
@@ -238,8 +249,7 @@ reverse order to be printed first."
           (t
            (lambda (values)
              (write-string string *template-output*)
-             (loop for call across (funcall *value-access-function*
-                                            symbol values t)
+             (loop for call across (funcall cexpr values t)
                    do (fill-and-print-template
                        (funcall *call-template-access-function* call)
                        (funcall *call-value-access-function* call)
@@ -303,7 +313,7 @@ TMPL_IF or TMPL_UNLESS, a corresponding TMPL_ELSE was seen."
     (cond ((string-equal token "TMPL_INCLUDE")
             ;; TMPL_INCLUDE tag - first read the pathname which has to
             ;; follow and merge it with *DEFAULT-TEMPLATE-PATHNAME*
-            (let* ((pathname (read-tag-rest :read-attribute t :intern nil))
+            (let* ((pathname (unquote-string (read-tag-rest :read-attribute t)))
                    (merged-pathname
                      (merge-pathnames pathname
                                       *default-template-pathname*)))
@@ -333,7 +343,7 @@ TMPL_IF or TMPL_UNLESS, a corresponding TMPL_ELSE was seen."
           ((string-equal token "TMPL_VAR")
             ;; TMPL_VAR tag - first read the symbol which has to
             ;; follow and intern it
-            (let ((expression (read-tag-rest :read-attribute t :intern nil)))
+            (let ((expression (read-tag-rest :read-attribute t)))
               (multiple-value-bind (next-fn else-follows)
                   ;; first we recursively create the template printer
                   ;; for the rest of the stream
@@ -428,7 +438,7 @@ TMPL_IF or TMPL_UNLESS, a corresponding TMPL_ELSE was seen."
           ((or (string-equal token "TMPL_IF")
                (string-equal token "TMPL_UNLESS"))
             ;; TMPL_IF or TMPL_UNLESS tag - first read the string
-            (let ((expression (read-tag-rest :read-attribute t :intern nil))
+            (let ((expression (read-tag-rest :read-attribute t))
                   (unlessp (string-equal token "TMPL_UNLESS")))
               (multiple-value-bind (if-fn else-follows)
                   (with-syntax-error-location ()

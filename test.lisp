@@ -2,6 +2,7 @@
 ;;; $Header: /usr/local/cvsrep/html-template/test.lisp,v 1.13 2007/01/01 23:49:16 edi Exp $
 
 ;;; Copyright (c) 2003-2007, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (C) 2012 Eyecarepro.net
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -68,9 +69,6 @@
 (test "" "<!-- TMPL_VAR foo -->" nil)
 (test "" "<!-- TMPL_VAR foo -->" '(foo "abc"))
 (test "" "<!-- TMPL_VAR foo -->" '(:bar "abc"))
-(test "abc" "<!-- TMPL_VAR 'foo' -->" '(:foo "abc"))
-(test "abc" "<!-- TMPL_VAR \"foo\" -->" '(:foo "abc"))
-(test nil "<!-- TMPL_VAR foo-->" '(:foo "abc"))
 (test "" "<!-- TMPL_IF foo -->abc<!-- /TMPL_IF -->" nil)
 (test "" "<!-- TMPL_IF foo -->abc<!-- /TMPL_IF -->" '(:foo nil))
 (test "abc" "<!-- TMPL_IF foo -->abc<!-- /TMPL_IF -->" '(:foo t))
@@ -99,13 +97,14 @@
 (test "[[][][]]" "[<!-- TMPL_LOOP foo -->[<!-- TMPL_VAR bar -->]<!-- /TMPL_LOOP -->]" '(:foo (() () ())))
 (test "[[1][2][3]]" "[<!-- TMPL_LOOP foo -->[<!-- TMPL_VAR bar -->]<!-- /TMPL_LOOP -->]" '(:foo ((:bar "1") (:bar "2") (:bar "3"))))
 (test "[[1][][3]]" "[<!-- TMPL_LOOP foo -->[<!-- TMPL_VAR bar -->]<!-- /TMPL_LOOP -->]" '(:foo ((:bar "1") () (:bar "3"))))
-(test "[[1][2][3]]" "[<!-- TMPL_LOOP foo -->[<!-- TMPL_IF 'bar' --><!-- TMPL_VAR bar --><!-- TMPL_ELSE-->2<!-- /TMPL_IF -->]<!-- /TMPL_LOOP -->]" '(:foo ((:bar "1") () (:bar "3"))))
-(test "[[123][456][789]]" "[<!-- TMPL_LOOP 'foo' -->[<!-- TMPL_LOOP 'bar' --><!-- TMPL_VAR 'bar' --><!-- /TMPL_LOOP -->]<!-- /TMPL_LOOP -->]" '(:foo ((:bar ((:bar "1") (:bar "2") (:bar "3")))
+(test "[[1][2][3]]" "[<!-- TMPL_LOOP foo -->[<!-- TMPL_IF bar --><!-- TMPL_VAR bar --><!-- TMPL_ELSE-->2<!-- /TMPL_IF -->]<!-- /TMPL_LOOP -->]" '(:foo ((:bar "1") () (:bar "3"))))
+(test "[[123][456][789]]" "[<!-- TMPL_LOOP foo -->[<!-- TMPL_LOOP bar --><!-- TMPL_VAR bar --><!-- /TMPL_LOOP -->]<!-- /TMPL_LOOP -->]" '(:foo ((:bar ((:bar "1") (:bar "2") (:bar "3")))
                                                                                                                                                       (:bar ((:bar "4") (:bar "5") (:bar "6")))
                                                                                                                                                       (:bar ((:bar "7") (:bar "8") (:bar "9"))))))
-(test "[[123][baz][789]]" "[<!-- TMPL_LOOP 'foo' -->[<!-- TMPL_IF baz --><!-- TMPL_LOOP 'baz' --><!-- TMPL_VAR 'bar' --><!-- /TMPL_LOOP --><!-- TMPL_ELSE -->baz<!-- /TMPL_IF -->]<!-- /TMPL_LOOP -->]" '(:foo ((:baz ((:bar "1") (:bar "2") (:bar "3")))
-                                                                                                                                                      ()
-                                                                                                                                                      (:baz ((:bar "7") (:bar "8") (:bar "9"))))))
+(test "[[123][baz][789]]" "[<!-- TMPL_LOOP foo -->[<!-- TMPL_IF baz --><!-- TMPL_LOOP baz --><!-- TMPL_VAR bar --><!-- /TMPL_LOOP --><!-- TMPL_ELSE -->baz<!-- /TMPL_IF -->]<!-- /TMPL_LOOP -->]"
+      '(:foo ((:baz ((:bar "1") (:bar "2") (:bar "3")))
+              ()
+              (:baz ((:bar "7") (:bar "8") (:bar "9"))))))
 (test nil "<!-- TMPL_ELSE -->" nil)
 (test "<!-- /TMPL_ELSE -->" "<!-- /TMPL_ELSE -->" nil)
 (test nil "<!-- /TMPL_IF -->" nil)
@@ -159,7 +158,7 @@
 
 (let ((*template-start-marker* "<")
       (*template-end-marker* ">"))
-  (test "The quick <brown> fox" "The <TMPL_VAR 'speed'> <brown> fox"
+  (test "The quick <brown> fox" "The <TMPL_VAR speed> <brown> fox"
         '(:speed "quick")))
 
 (let* ((random-string (format nil "template-test-~A" (random 1000000)))

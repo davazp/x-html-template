@@ -61,10 +61,12 @@ list is destructively modified."
           (t (incf *current-column*)))
     char))
 
+(defvar *whitespace-characters*
+  '(#\Space #\Tab #\Newline #\Linefeed #\Return #\Page))
+
 (defmacro whitespacep (char)
   "Checks whether CHAR is whitespace."
-  `(find ,char
-         '(#\Space #\Tab #\Newline #\Linefeed #\Return #\Page)))
+  `(find ,char *whitespace-characters*))
 
 (defun read-while (predicate &key (skip t) (eof-action t))
   "Reads characters from *STANDARD-INPUT* while PREDICATE returns a
@@ -156,7 +158,7 @@ far is returned \(wrapped in a list)."
               (otherwise
                 (list string)))))
         (t nil)))
-    
+
 (defun read-until (string &key (skip t) (eof-action t))
   "Reads characters from *STANDARD-INPUT* up to and including
 STRING. Return the string which was read \(excluding STRING) unless
@@ -243,46 +245,62 @@ pointer."
                       old-fill-pointer)))))
   string)
 
-(defun read-tag-rest (&key read-attribute (intern t) (eof-action t))
+(defun read-tag-rest (&key read-attribute (eof-action t))
   "Reads the rest of a template tag from *STANDARD-INPUT* after the
 name of the tag has been read. Reads and returns the tag's attribute
-if READ-ATTRIBUTE is true. Optionally also interns the attribute
-string if INTERN is true. See READ-WHILE's docstring for EOF-ACTION."
+if READ-ATTRIBUTE is true. See READ-WHILE's docstring for EOF-ACTION."
   (with-syntax-error-location ()
-    (let (rest)
-      (handler-case
-        (let ((attribute (and read-attribute
-                              (progn
-                                (skip-whitespace :assert t)
-                                (let ((string (with-syntax-error-location ()
-                                                (read-delimited-string :eof-action
-                                                                       (lambda (collector)
-                                                                         (declare (ignore collector))
-                                                                         (signal-template-syntax-error
-                                                                          "EOF while reading tag attribute"))))))
-                                  (if intern
-                                    (intern
-                                     (funcall (if *upcase-attribute-strings*
-                                                #'string-upcase
-                                                #'identity)
-                                              string)
-                                     *template-symbol-package*)
-                                    string))))))
-          (skip-whitespace)
-          (setq rest (read-until *template-end-marker*
-                                 :skip nil
-                                 :eof-action eof-action))
-          (when (plusp (length rest))
-            (signal-template-syntax-error "Expected ~S but read ~S"
-                   *template-end-marker*
-                   rest))
-          attribute)
-        (end-of-file ()
-          (cond ((eq eof-action t)
-                  (signal-template-syntax-error "Unexpected EOF"))
-                ((null eof-action)
-                  nil)
-                (t (funcall eof-action rest))))))))
+    (let (attribute)
+      (cond
+	;; If we have to read the attribute, read until the
+	;; *template-end-marker* and use the string as attribute,
+	;; trimming whitespaces on the right.
+	(read-attribute
+	 (skip-whitespace :assert t)
+	 (with-syntax-error-location ()
+	   (let* ((attribute-raw
+		   (read-until *template-end-marker*
+			       :skip nil
+			       :eof-action (lambda (collector)
+					     (declare (ignore collector))
+					     (signal-template-syntax-error
+					      "EOF while reading tag attribute")))))
+	     (setq attribute (string-right-trim *whitespace-characters* attribute-raw)))))
+	;; The tag has not attributes, so just read the
+	;; *template-end-marker*, signal an error if EOF is found
+	;; before the tag is closed.
+	(t
+	 (let (rest)
+	   (handler-case
+	       (progn
+		 (skip-whitespace)
+		 (setq rest (read-until *template-end-marker*
+					:skip nil
+					:eof-action eof-action))
+		 (when (plusp (length rest))
+		   (signal-template-syntax-error "Expected ~S but read ~S"
+						 *template-end-marker*
+						 rest)))
+	     (end-of-file ()
+	       (cond ((eq eof-action t)
+		      (signal-template-syntax-error "Unexpected EOF"))
+		     ((null eof-action)
+		      nil)
+		     (t (funcall eof-action rest))))))))
+      attribute)))
+
+
+(defun unquote-string (string)
+  "Remove initial and the final character from STRING, if they both
+are a single quote, or they are double quotes."
+  (if (and (<= 2 (length string))
+           (let ((first (char string 0))
+                 (last (char string (1- (length string)))))
+             (or (char= first last #\')
+                 (char= first last #\"))))
+      (subseq string 1 (1- (length string)))
+      string))
+
 
 (defun escape-string (string &key (test *escape-char-p*))
   (declare (optimize speed))
