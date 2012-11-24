@@ -1,5 +1,4 @@
 #+title: X-HTML-TEMPLATE Library
-#+startup: indent showall
 
 * Introduction
 x-html-template library is a little fork of the Common Lisp library
