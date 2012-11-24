@@ -1,0 +1,127 @@
+#+title: X-HTML-TEMPLATE Library
+#+startup: indent showall
+
+* Introduction
+x-html-template library is a little fork of the Common Lisp library
+[[http://weitz.de/html-template/][html-template]] which adds support for computed expressions while keeps
+mostly compatible. See the differences with html-template [[Differences with html-template][below]].
+
+I wrote this because we were using too many html-templates and
+migrating to a new template system was not worth. We wanted some extra
+flexibility however and it made our lives easier.
+
+* Using x-html-template
+The html-template API is untouched (see its documentation if you are
+not used html-template before), except the system name and packages
+were renamed to x-html-template, to avoid possible collisions. A
+package nickname =x-template= is also provided as shortcut.
+
+x-html-template changes the semantic of the template attributes. The
+tags accept expressions instead of symbols. The expressions follow the following syntax:
+
+#+begin_example
+  expression ::= 'literal'
+               | "literal"
+               | symbol
+               | symbol(expression_1,expression_2,..,expression_N)
+#+end_example
+
+A hypothetical template could look like
+
+#+BEGIN_EXAMPLE
+<!-- tmpl_loop sort(users,'name') -->
+      <!-- tmpl_var escape-html(up case(name)) -->
+   <!-- /tmpl_if -->
+<!-- /tmpl_loop -->
+#+END_EXAMPLE
+
+This change diverges from the philosophy of HTML-TEMPLATE about
+separation of the code and the layout. However, this library does not
+provide harmful abstractions itself, but it offers the ability to
+provide them :-)
+
+I really think that used properly, the extensions can be useful.
+
+* Examples
+
+#+begin_src common-lisp
+  (with-output-to-string (*default-template-output*)
+    (fill-and-print-template
+     "<!-- tmpl_var html-escape(string) -->"
+     (list :string "0 <> 1"
+           :html-escape #'escape-string-all)))
+#+end_src
+=>
+#+begin_example
+"0 &amp;lt;&amp;gt; 1"
+#+end_example
+
+** Providing a default set of user-defined functions
+Sometimes, it is convenient to provide a default set of user-defined
+function values to the templates. You can set the special variable
+=*VALUE-ACCESS-FUNCTION*= to provide them. The code would look like:
+
+#+begin_src common-lisp
+  (defvar *x-template-default-values*
+    (list :html-escape #'escape-string-all))
+
+  (unless (boundp '*original-value-access-function*)
+    (defvar *original-value-access-function*
+      ,*value-access-function*))
+
+  (setf *value-access-function*
+        (lambda (symbol values &optional in-loop)
+          (or (funcall *original-value-access-function* symbol values in-loop)
+              (getf *x-template-default-values* symbol))))
+#+end_src
+
+Then, we can write the above example without defining the html-escape
+function.
+#+begin_src common-lisp
+  (with-output-to-string (*default-template-output*)
+    (fill-and-print-template
+     "<!-- tmpl_var html-escape(string) -->"
+     (list :string "0 <> 1")))
+#+END_SRC
+
+
+* Differences with html-template
+X-HTML-TEMPLATE is not fully compatible with HTML-TEMPLATE, but it is
+in the common cases and porting your code to X-HTML-TEMPLATE should be
+trivial.
+
+** Quoting attributes
+HTML-TEMPLATE allows to quote an attribute as
+=<!-- tmpl_var 'foobar' -->=
+
+As 'foobar' is a literal string in x-html-template, this code will not
+work in the same way. To port it, just remove the single or double
+quotes.
+
+However, if you are quoting the symbol because it contains spaces or
+non-allowed characters, then you will have to rename your symbol.
+
+** White-spaces delimiters
+
+HTML-TEMPLATE white-spaces delimiters after =*TEMPLATE-START-MARKER*=
+and before =*TEMPLATE-END-MARKER*= are optional and you could omit, if
+you quote the parameters. In X-HTML-TEMPLATE, quoting parameters is
+not allowed, but the white-spaces are optional anyway.
+
+Therefore, a template like
+
+=<!-- tmpl_var foo-->=
+
+which is not legal in html-template, will be in x-html-template. It
+could seem weird, but it becomes useful if you override the default
+tag markers. Consider
+
+=<tmpl_var foo>= in contrast to =<tmpl_var foo >=. A full working
+example:
+
+#+BEGIN_SRC common-lisp
+  (let ((x-template:*template-start-marker* "<")
+        (x-template:*template-end-marker* ">"))
+    (with-output-to-string (x-template:*default-template-output*)
+      (x-template:fill-and-print-template "<tmpl_var foo>" '(:foo "bar"))))
+#+END_SRC
