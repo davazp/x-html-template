@@ -1,21 +1,24 @@
 #+title: X-HTML-TEMPLATE Library
+#+startup: showall content
 
-* Introduction
-x-html-template library is a little fork of the Common Lisp library
+* X-HTML-TEMPLATE Library
+
+** Introduction
+/X-HTML-TEMPLATE/ library is a little fork of the Common Lisp library
 [[http://weitz.de/html-template/][html-template]] which adds support for computed expressions while keeps
-mostly compatible. See the differences with html-template [[Differences with html-template][below]].
+mostly compatible. See the differences with /html-template [[Differences with html-template][below]].
 
-I wrote this because we were using too many html-templates and
+I wrote this because we were using too many /html-templates and
 migrating to a new template system was not worth. We wanted some extra
 flexibility however and it made our lives easier.
 
-* Using x-html-template
-The html-template API is untouched (see its documentation if you are
-not used html-template before), except the system name and packages
-were renamed to x-html-template, to avoid possible collisions. A
+** Using x-html-template
+The /HTML-TEMPLATE/ API is untouched (see its documentation if you are
+not used /html-template before), except the system name and packages
+were renamed to /X-HTML-TEMPLATE/, to avoid possible collisions. A
 package nickname =x-template= is also provided as shortcut.
 
-x-html-template changes the semantic of the template attributes. The
+/X-HTML-TEMPLATE/ changes the semantic of the template attributes. The
 tags accept expressions instead of symbols. The expressions follow the following syntax:
 
 #+BEGIN_EXAMPLE
@@ -29,33 +32,32 @@ A hypothetical template could look like
 
 #+BEGIN_EXAMPLE
 <!-- tmpl_loop sort(users,'name') -->
-      <!-- tmpl_var escape-html(up case(name)) -->
+      <!-- tmpl_var escape-html(upcase(name)) -->
    <!-- /tmpl_if -->
 <!-- /tmpl_loop -->
 #+END_EXAMPLE
 
-This change diverges from the philosophy of HTML-TEMPLATE about
+This change diverges from the philosophy of /HTML-TEMPLATE about
 separation of the code and the layout. However, this library does not
 provide harmful abstractions itself, but it offers the ability to
 provide them :-)
 
 I really think that used properly, the extensions can be useful.
 
-* Examples
+** Examples
 
 #+BEGIN_SRC common-lisp
   (with-output-to-string (*default-template-output*)
     (fill-and-print-template
      "<!-- tmpl_var html-escape(string) -->"
-     (list :string "0 <> 1"
-           :html-escape #'escape-string-all)))
+     (list :string "0 <> 1" :html-escape #'escape-string-all)))
 #+END_SRC
 =>
 #+BEGIN_EXAMPLE
 "0 &amp;lt;&amp;gt; 1"
 #+END_EXAMPLE
 
-** Providing a default set of user-defined functions
+*** Providing a default set of user-defined functions
 Sometimes, it is convenient to provide a default set of user-defined
 function values to the templates. You can set the special variable
 =*VALUE-ACCESS-FUNCTION*= to provide them. The code would look like:
@@ -84,39 +86,34 @@ function.
 #+END_SRC
 
 
-* Differences with html-template
-X-HTML-TEMPLATE is not fully compatible with HTML-TEMPLATE, but it is
-in the common cases and porting your code to X-HTML-TEMPLATE should be
+** Differences with html-template
+/X-HTML-TEMPLATE/ is not fully compatible with /HTML-TEMPLATE, but it is
+in the common cases and porting your code to /X-HTML-TEMPLATE/ should be
 trivial.
 
-** Quoting attributes
-HTML-TEMPLATE allows to quote an attribute as
-=<!-- tmpl_var 'foobar' -->=
-
-As 'foobar' is a literal string in x-html-template, this code will not
+*** Quoting attributes
+/HTML-TEMPLATE allows to quote an attribute as =<!-- tmpl_var 'foobar' -->=
+As 'foobar' is a literal string in /X-HTML-TEMPLATE/, this code will not
 work in the same way. To port it, just remove the single or double
-quotes.
+quotes. However, if you are quoting the symbol because it contains
+spaces or non-allowed characters, then you will have to rename your
+symbol.
 
-However, if you are quoting the symbol because it contains spaces or
-non-allowed characters, then you will have to rename your symbol.
+*** White-spaces delimiters
 
-** White-spaces delimiters
-
-HTML-TEMPLATE white-spaces delimiters after =*TEMPLATE-START-MARKER*=
+/HTML-TEMPLATE white-spaces delimiters after =*TEMPLATE-START-MARKER*=
 and before =*TEMPLATE-END-MARKER*= are optional and you could omit, if
-you quote the parameters. In X-HTML-TEMPLATE, quoting parameters is
+you quote the parameters. In /X-HTML-TEMPLATE/, quoting parameters is
 not allowed, but the white-spaces are optional anyway.
 
-Therefore, a template like
+Therefore, a template like =<!-- tmpl_var foo-->= which is *not* legal
+in /html-template, will be in /X-HTML-TEMPLATE/. It could seem weird, but
+it becomes useful if you override the default tag markers. Consider,
+for example:
 
-=<!-- tmpl_var foo-->=
+=<tmpl_var foo>= in contrast to =<tmpl_var foo >=.
 
-which is not legal in html-template, will be in x-html-template. It
-could seem weird, but it becomes useful if you override the default
-tag markers. Consider
-
-=<tmpl_var foo>= in contrast to =<tmpl_var foo >=. A full working
-example:
+A full working example:
 
 #+BEGIN_SRC common-lisp
   (let ((*template-start-marker* "<")
