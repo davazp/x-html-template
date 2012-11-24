@@ -18,12 +18,12 @@ package nickname =x-template= is also provided as shortcut.
 x-html-template changes the semantic of the template attributes. The
 tags accept expressions instead of symbols. The expressions follow the following syntax:
 
-#+begin_example
+#+BEGIN_EXAMPLE
   expression ::= 'literal'
                | "literal"
                | symbol
                | symbol(expression_1,expression_2,..,expression_N)
-#+end_example
+#+END_EXAMPLE
 
 A hypothetical template could look like
 
@@ -43,24 +43,24 @@ I really think that used properly, the extensions can be useful.
 
 * Examples
 
-#+begin_src common-lisp
+#+BEGIN_SRC common-lisp
   (with-output-to-string (*default-template-output*)
     (fill-and-print-template
      "<!-- tmpl_var html-escape(string) -->"
      (list :string "0 <> 1"
            :html-escape #'escape-string-all)))
-#+end_src
+#+END_SRC
 =>
-#+begin_example
+#+BEGIN_EXAMPLE
 "0 &amp;lt;&amp;gt; 1"
-#+end_example
+#+END_EXAMPLE
 
 ** Providing a default set of user-defined functions
 Sometimes, it is convenient to provide a default set of user-defined
 function values to the templates. You can set the special variable
 =*VALUE-ACCESS-FUNCTION*= to provide them. The code would look like:
 
-#+begin_src common-lisp
+#+BEGIN_SRC common-lisp
   (defvar *x-template-default-values*
     (list :html-escape #'escape-string-all))
 
@@ -72,11 +72,11 @@ function values to the templates. You can set the special variable
         (lambda (symbol values &optional in-loop)
           (or (funcall *original-value-access-function* symbol values in-loop)
               (getf *x-template-default-values* symbol))))
-#+end_src
+#+END_SRC
 
 Then, we can write the above example without defining the html-escape
 function.
-#+begin_src common-lisp
+#+BEGIN_SRC common-lisp
   (with-output-to-string (*default-template-output*)
     (fill-and-print-template
      "<!-- tmpl_var html-escape(string) -->"
