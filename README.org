@@ -6,15 +6,15 @@
 ** Introduction
 /X-HTML-TEMPLATE/ library is a little fork of the Common Lisp library
 [[http://weitz.de/html-template/][html-template]] which adds support for computed expressions while keeps
-mostly compatible. See the differences with /html-template [[Differences with html-template][below]].
+mostly compatible. See the differences with /html-template/ [[Differences with html-template][below]].
 
-I wrote this because we were using too many /html-templates and
+I wrote this because we were using too many html-templates and
 migrating to a new template system was not worth. We wanted some extra
 flexibility however and it made our lives easier.
 
 ** Using x-html-template
 The /HTML-TEMPLATE/ API is untouched (see its documentation if you are
-not used /html-template before), except the system name and packages
+not used /HTML-TEMPLATE/ before), except the system name and packages
 were renamed to /X-HTML-TEMPLATE/, to avoid possible collisions. A
 package nickname =x-template= is also provided as shortcut.
 
@@ -37,7 +37,7 @@ A hypothetical template could look like
 <!-- /tmpl_loop -->
 #+END_EXAMPLE
 
-This change diverges from the philosophy of /HTML-TEMPLATE about
+This change diverges from the philosophy of /HTML-TEMPLATE/ about
 separation of the code and the layout. However, this library does not
 provide harmful abstractions itself, but it offers the ability to
 provide them :-)
@@ -45,6 +45,8 @@ provide them :-)
 I really think that used properly, the extensions can be useful.
 
 ** Examples
+
+A simple use:
 
 #+BEGIN_SRC common-lisp
   (with-output-to-string (*default-template-output*)
@@ -87,12 +89,11 @@ function.
 
 
 ** Differences with html-template
-/X-HTML-TEMPLATE/ is not fully compatible with /HTML-TEMPLATE, but it is
-in the common cases and porting your code to /X-HTML-TEMPLATE/ should be
-trivial.
+/X-HTML-TEMPLATE/ is not fully compatible with /HTML-TEMPLATE/, but it
+is in the common cases and porting your code should be trivial.
 
 *** Quoting attributes
-/HTML-TEMPLATE allows to quote an attribute as =<!-- tmpl_var 'foobar' -->=
+/HTML-TEMPLATE/ allows to quote an attribute as =<!-- tmpl_var 'foobar' -->=
 As 'foobar' is a literal string in /X-HTML-TEMPLATE/, this code will not
 work in the same way. To port it, just remove the single or double
 quotes. However, if you are quoting the symbol because it contains
@@ -101,15 +102,15 @@ symbol.
 
 *** White-spaces delimiters
 
-/HTML-TEMPLATE white-spaces delimiters after =*TEMPLATE-START-MARKER*=
-and before =*TEMPLATE-END-MARKER*= are optional and you could omit, if
-you quote the parameters. In /X-HTML-TEMPLATE/, quoting parameters is
-not allowed, but the white-spaces are optional anyway.
+/HTML-TEMPLATE/ white-spaces delimiters after the template start
+marker are optional and you could omit them if you quote the
+parameters. In /X-HTML-TEMPLATE/, quoting parameters is not allowed,
+but the white-spaces are optional anyway.
 
 Therefore, a template like =<!-- tmpl_var foo-->= which is *not* legal
-in /html-template, will be in /X-HTML-TEMPLATE/. It could seem weird, but
-it becomes useful if you override the default tag markers. Consider,
-for example:
+in /HTML-TEMPLATE/, will be in /X-HTML-TEMPLATE/. It could seem weird,
+but it becomes useful if you override the default tag
+markers. Consider, for example:
 
 =<tmpl_var foo>= in contrast to =<tmpl_var foo >=.
 
