@@ -119,8 +119,8 @@ tag markers. Consider
 example:
 
 #+BEGIN_SRC common-lisp
-  (let ((x-template:*template-start-marker* "<")
-        (x-template:*template-end-marker* ">"))
-    (with-output-to-string (x-template:*default-template-output*)
+  (let ((*template-start-marker* "<")
+        (*template-end-marker* ">"))
+    (with-output-to-string (*default-template-output*)
       (x-template:fill-and-print-template "<tmpl_var foo>" '(:foo "bar"))))
 #+END_SRC
